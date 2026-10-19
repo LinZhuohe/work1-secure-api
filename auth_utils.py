@@ -16,8 +16,9 @@ import bcrypt
 import jwt
 from flask import jsonify, request
 
-# 开发环境默认密钥；生产环境必须通过环境变量 JWT_SECRET 注入（CI 中也会设置）
-SECRET_KEY = os.environ.get("JWT_SECRET", "dev-only-secret-change-me")  # nosec B105
+# 开发环境默认密钥（≥32 字节，满足 HS256 最小密钥长度要求）；
+# 生产环境必须通过环境变量 JWT_SECRET 注入
+SECRET_KEY = os.environ.get("JWT_SECRET", "dev-only-secret-change-me-0123456789abcdef")
 ALGORITHM = "HS256"
 TOKEN_TTL_HOURS = 1
 

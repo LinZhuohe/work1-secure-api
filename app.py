@@ -30,7 +30,7 @@ def seed_user():
     """启动时建表，并预置一个演示账号（密码从环境变量读，便于 CI 覆盖）。"""
     db.create_all()
     if User.query.filter_by(username="admin").first() is None:
-        seed_password = os.environ.get("SEED_PASSWORD", "Admin123!")  # nosec B105
+        seed_password = os.environ.get("SEED_PASSWORD", "Admin123!")
         db.session.add(
             User(username="admin", password_hash=hash_password(seed_password))
         )
