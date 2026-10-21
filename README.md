@@ -105,11 +105,37 @@ curl -X POST http://127.0.0.1:5000/api/posts \
    - 最终报告：**Dependencies Scanned = 12（12 unique）**，**Vulnerable Dependencies = 0 / Vulnerabilities Found = 0**。
    - **误报研判与抑制（SCA triage）**：首次扫描时报告了 1 个 LOW 置信度的 **CVE-2025-45770**。经 NVD 核实为误报：① 该 CVE 影响的是 **另一个包** `jwt_project:jwt`（`jwt` 库，≤5.4.3，不同版本线），而本项目用的是 **PyJWT 2.15.1**（CPE 为 `pyjwt_project:pyjwt`，2.x 版本线）；Dependency-Check 因名称碰撞给 PyJWT 同时挂了两个 CPE，错误的 `jwt_project:jwt` 导致误报。② 该 CVE 在 NVD 上已被 **disputed**（密钥长度应由应用负责，而非库）。本项目使用强 HS256 密钥（≥32 字节，可用 `JWT_SECRET` 配置）。因此在 `suppression.xml` 中精确抑制该错误 CPE（仅对 `pkg:pypi/pyjwt` + `jwt_project:jwt` + 该 CVE 生效，保留正确的 `pyjwt_project` CPE，未来真实 PyJWT 漏洞仍会报出）。抑制后报告显示 **Vulnerabilities Suppressed = 1**，且被抑制项仍保留在报告中可审计。
 
-> 截图位置（提交时附上）：
-> - 图 4-1：GitHub Actions 流水线全绿
-> - 图 4-2：Artifacts 中的 bandit-report（SAST）
-> - 图 4-3：Artifacts 中的 dependency-check-report（SCA）
-> - 图 4-4：接口测试（登录 200 / 错误密码 401 / 无 token 401 / SQLi 401 / XSS 被转义）
+### 4.1 证据截图
+
+以下截图存放在仓库 [`docs/screenshots/`](docs/screenshots)，与实验报告中的图 4-1 ~ 图 4-4 一一对应。
+
+**图 4-1 GitHub Actions 流水线全绿**（最近两次运行 #12 `7795c54`、#11 `28a664d` 均为 ✔）
+
+![图 4-1 GitHub Actions 流水线全绿](docs/screenshots/ci_runs_green.png)
+
+**图 4-2 Artifacts 中的 `bandit-report`（SAST，0 issues）**
+
+![图 4-2 Bandit 静态扫描报告](docs/screenshots/bandit_report.png)
+
+**图 4-3 Artifacts 中的 `dependency-check-report`（SCA）**：12 个依赖、0 个漏洞；CVE-2025-45770 为 CPE 名称碰撞导致的误报，用 `suppression.xml` 精确抑制且保留审计记录
+
+| 扫描汇总（12 依赖 / 0 漏洞） | 被抑制的误报项（可审计） |
+|---|---|
+| ![图 4-3a SCA 汇总](docs/screenshots/sca_summary.png) | ![图 4-3b SCA 抑制项](docs/screenshots/sca_suppressed.png) |
+
+**图 4-4 接口安全测试**（登录 200 / 错误密码 401 / 无 token 401 / SQL 注入载荷 401 / XSS 被转义）
+
+| 登录成功，返回 JWT | 密码错误 |
+|---|---|
+| ![登录 200](docs/screenshots/api_login_200.png) | ![密码错误 401](docs/screenshots/api_wrong_401.png) |
+
+| 无 token 访问受保护接口 | SQL 注入载荷登录 |
+|---|---|
+| ![无 token 401](docs/screenshots/api_notoken_401.png) | ![SQLi 401](docs/screenshots/api_sqli_401.png) |
+
+同一张图里还包含：带 token 访问 `/api/data` 返回 200，以及 `POST /api/posts` 返回 201、`<script>alert(1)</script>` 被转义为 `&lt;script&gt;alert(1)&lt;/script&gt;`：
+
+![XSS 被转义](docs/screenshots/api_token_200_xss.png)
 
 ---
 
@@ -122,6 +148,16 @@ curl -X POST http://127.0.0.1:5000/api/posts \
 - 根因：`ap_normalize_path()` 对路径只做了**一层解码/规范化**，补丁采用黑名单特征匹配，多重编码可绕过（CWE-177 / CWE-22），配合 CGI 与宽松目录授权形成 RCE。
 - 修复：基础镜像升级到 `httpd:2.4.51`（修复版保留与漏洞版**完全相同**的配置，仅改版本号）。
 - 验证：同一载荷下，漏洞版 2.4.50 返回 200（读到 passwd / 执行命令），修复版 2.4.51 一律返回 **400** 且正常首页仍为 200。
+
+**图 5-1 / 5-2 漏洞版 2.4.50 实测**：路径穿越读取容器内 `/etc/passwd`、经 CGI 执行 `id`（均返回 200）
+
+| 路径穿越读 /etc/passwd | CGI RCE 执行 id |
+|---|---|
+| ![图 5-1 路径穿越](docs/screenshots/cve_traversal_200.png) | ![图 5-2 CGI RCE](docs/screenshots/cve_rce_200.png) |
+
+**图 5-3 修复版 2.4.51**：同一载荷一律 400，正常首页仍 200
+
+![图 5-3 修复版返回 400](docs/screenshots/cve_fixed_400.png)
 
 完整复现命令、根因分析、修复文件、对比证据见：**[`cve/CVE-2021-42013/README.md`](cve/CVE-2021-42013/README.md)**（`vulnerable/`、`fixed/` 为修复文件文件夹，`evidence/` 为实测原始输出，`verify.ps1` 为一键对比脚本）。
 
