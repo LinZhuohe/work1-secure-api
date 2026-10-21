@@ -16,8 +16,8 @@
 | 实验编号（Work No.） | Work 1 |
 | 实验标题（Title） | Secure REST API Development with CI/CD and Real CVE Vulnerability Analysis |
 | Variant（变体号） | 待填（请向老师确认后补全） |
-| 姓名（Name） | 待填 |
-| 学号（Student ID） | 待填 |
+| 姓名（Name） | 林卓赫 |
+| 学号（Student ID） | 23320224 |
 | 技术栈 | Python / Flask + SQLAlchemy + bcrypt + PyJWT |
 | 代码仓库 | https://github.com/LinZhuohe/work1-secure-api |
 | 成功 Pipeline | https://github.com/LinZhuohe/work1-secure-api/actions |
