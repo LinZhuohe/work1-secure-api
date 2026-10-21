@@ -43,7 +43,10 @@ jobs:
           path: "."
           format: "HTML"
           out: "reports"
+          # The Pip (requirements.txt) analyzer is experimental and must be
+          # enabled explicitly, otherwise Dependency-Check scans 0 dependencies.
           args: >
+            --enableExperimental
             --scan requirements.txt
 
       - name: Upload SCA report
