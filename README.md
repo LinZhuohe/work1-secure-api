@@ -100,7 +100,10 @@ curl -X POST http://127.0.0.1:5000/api/posts \
 
 1. **单元测试**：`python -m unittest test_api -v`（覆盖登录、JWT、SQLi、XSS，共 7 个用例）；
 2. **SAST（静态应用安全测试）**：`bandit` 扫描全部源码，输出 HTML 报告 `bandit-report` artifact；
-3. **SCA（软件成分分析）**：`dependency-check/Dependency-Check_Action`（OWASP Dependency-Check）扫描 `requirements.txt` 依赖中的已知 CVE，输出 HTML 报告 `dependency-check-report` artifact。
+3. **SCA（软件成分分析）**：`dependency-check/Dependency-Check_Action`（OWASP Dependency-Check 13.0.0）扫描 `requirements.txt` 中的已知 CVE，输出 HTML 报告 `dependency-check-report` artifact。
+   - 由于 OWASP Dependency-Check 的 **Pip 分析器默认是实验性的**，流水线显式加了 `--enableExperimental`，否则 requirements.txt 会被扫描成 **0 个依赖**。
+   - 最终报告：**Dependencies Scanned = 12（12 unique）**，**Vulnerable Dependencies = 0 / Vulnerabilities Found = 0**。
+   - **误报研判与抑制（SCA triage）**：首次扫描时报告了 1 个 LOW 置信度的 **CVE-2025-45770**。经 NVD 核实为误报：① 该 CVE 影响的是 **另一个包** `jwt_project:jwt`（`jwt` 库，≤5.4.3，不同版本线），而本项目用的是 **PyJWT 2.15.1**（CPE 为 `pyjwt_project:pyjwt`，2.x 版本线）；Dependency-Check 因名称碰撞给 PyJWT 同时挂了两个 CPE，错误的 `jwt_project:jwt` 导致误报。② 该 CVE 在 NVD 上已被 **disputed**（密钥长度应由应用负责，而非库）。本项目使用强 HS256 密钥（≥32 字节，可用 `JWT_SECRET` 配置）。因此在 `suppression.xml` 中精确抑制该错误 CPE（仅对 `pkg:pypi/pyjwt` + `jwt_project:jwt` + 该 CVE 生效，保留正确的 `pyjwt_project` CPE，未来真实 PyJWT 漏洞仍会报出）。抑制后报告显示 **Vulnerabilities Suppressed = 1**，且被抑制项仍保留在报告中可审计。
 
 > 截图位置（提交时附上）：
 > - 图 4-1：GitHub Actions 流水线全绿
