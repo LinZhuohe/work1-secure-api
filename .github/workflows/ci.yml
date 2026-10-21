@@ -45,8 +45,11 @@ jobs:
           out: "reports"
           # The Pip (requirements.txt) analyzer is experimental and must be
           # enabled explicitly, otherwise Dependency-Check scans 0 dependencies.
+          # suppression.xml removes a documented CPE-collision false positive
+          # (PyJWT wrongly matched to the separate `jwt` package / CVE-2025-45770).
           args: >
             --enableExperimental
+            --suppression suppression.xml
             --scan requirements.txt
 
       - name: Upload SCA report

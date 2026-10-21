@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OWASP Dependency-Check False-Positive Suppressions
+  Project: work1-secure-api
+
+  Suppression #1:
+    - Flagged dependency : pkg:pypi/pyjwt (PyJWT 2.15.1)
+    - Wrong CPE           : cpe:2.3:a:jwt_project:jwt
+    - Flagged CVE         : CVE-2025-45770
+  Reason:
+    1. Wrong product (CPE name collision). Dependency-Check attached TWO CPEs
+       to PyJWT: cpe:2.3:a:jwt_project:jwt AND cpe:2.3:a:pyjwt_project:pyjwt.
+       NVD CPE dictionary confirms they are DIFFERENT products:
+         * jwt_project:jwt   -> "JWT Project JSON Web Token (JWT)" (the `jwt`
+           package, affected <= 5.4.3, a different versioning line)
+         * pyjwt_project:pyjwt -> "PyJWT Project PyJWT" (our library, 2.x)
+       Our package is PyJWT 2.15.1, never 5.4.3, and CVE-2025-45770 lists
+       only cpe:2.3:a:jwt_project:jwt (not pyjwt_project:pyjwt).
+    2. The CVE is officially DISPUTED on NVD: key length is the application's
+       responsibility, not the library's. This application uses a strong
+       HS256 secret (>= 32 bytes, configurable via JWT_SECRET).
+  Scope: only removes the wrong jwt_project CPE for the pyjwt package; the
+  correct pyjwt_project CPE is kept, so any real future PyJWT CVE is still
+  reported.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+  <suppress>
+    <packageURL regex="true">^pkg:pypi/pyjwt@.*$</packageURL>
+    <cpe>cpe:2.3:a:jwt_project:jwt:*</cpe>
+    <cve>CVE-2025-45770</cve>
+  </suppress>
+</suppressions>
