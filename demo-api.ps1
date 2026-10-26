@@ -1,6 +1,6 @@
 # demo-api.ps1 - one-shot live demo of the secure API (for lab screenshots)
 # Usage (PowerShell, in the project root):
-#   powershell -ExecutionPolicy Bypass -File demo-api.ps1
+#   .\demo-api.ps1          (PowerShell prompt in this folder; do NOT use -File, it fails on [ ] in the path)
 # It starts Flask, runs all security checks, then stops Flask.
 
 $ErrorActionPreference = "Continue"
