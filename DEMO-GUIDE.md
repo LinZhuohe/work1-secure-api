@@ -6,6 +6,42 @@
 
 ---
 
+## 〇、开演前 5 分钟自检（照着敲一遍，出全绿再开始）
+
+开一个 PowerShell 窗口，逐条执行：
+
+```powershell
+cd "C:\Users\32905\Desktop\[HDU-CS4-26-27-1] Information Security\work1-secure-api"
+docker ps --format "{{.Names}}`t{{.Status}}`t{{.Ports}}"   # 应看到 8080 / 8081 两个容器 Up
+curl.exe -s -o NUL -w "%{http_code}`n" http://localhost:8080/   # 200
+curl.exe -s -o NUL -w "%{http_code}`n" http://localhost:8081/   # 200
+```
+
+全部正常后再按下面的顺序演示。**容器没起**才需要：
+
+```powershell
+cd "C:\Users\32905\Desktop\[HDU-CS4-26-27-1] Information Security\work1-secure-api\cve\CVE-2021-42013\vulnerable"; docker compose up -d
+cd "C:\Users\32905\Desktop\[HDU-CS4-26-27-1] Information Security\work1-secure-api\cve\CVE-2021-42013\fixed"; docker compose up -d
+```
+
+> ⚠️ 两个坑（这条最重要）
+> 1. 路径里有方括号 `[ ]`，**不要**用 `powershell -File xxx.ps1` 启动，会报「指定的通配符模式无效」。正确做法：先 `cd` 进目录，再敲 `.\demo-api.ps1`。
+> 2. **不要**在资源管理器里双击 .ps1；也不要用 `Start-Process`。就手动在窗口里敲命令，方便讲解和截图。
+
+---
+
+## 〇.5、时间轴（8 分钟版）
+
+| 时间 | 做什么 | 说什么（一句话） |
+|---|---|---|
+| 0:00–1:00 | 浏览器：仓库 → Actions → 最新 run → Artifacts | "每次 push 自动跑测试 + SAST + SCA" |
+| 1:00–3:00 | `cd` 项目根 → `.\demo-api.ps1`（6 项） | "6 个安全检查，401/201/转义全在这" |
+| 3:00–5:00 | `cd` 到 cve 目录 → `.\screenshot.ps1` | "同一载荷：漏洞版 200，修复版 400" |
+| 5:00–6:00 | 打开报告 PDF / README | "根因 + 修复 + 验证都写进文档" |
+| 6:00–8:00 | 答辩问答 | 见第五节 |
+
+---
+
 ## 一、30 秒开场白（照着念）
 
 > "我做的是 Work 1，包含两部分：第一，用 Flask 开发了一个安全的 REST API，实现了登录、JWT 鉴权和数据接口，并针对 SQL 注入、XSS、弱口令做了防护；第二，用 GitHub Actions 搭建了 CI/CD，每次提交自动做静态代码扫描（SAST/bandit）和依赖漏洞扫描（SCA/OWASP Dependency-Check）。最后我用 Vulhub 复现了一个真实漏洞 CVE-2021-42013（Apache 路径穿越+命令执行），分析了根因，升级版本修复并验证。所有代码都在我的 GitHub 公开仓库。"
